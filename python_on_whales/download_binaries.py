@@ -101,7 +101,7 @@ def get_user_os():
 
 
 def get_arch_for_docker_cli_url():
-    arch = platform.architecture()[0]
+    arch = platform.machine()
 
     # I don't know the exact list of possible architectures,
     # so if a user reports a NotImplementedError, we can easily add
@@ -112,7 +112,10 @@ def get_arch_for_docker_cli_url():
         "NotImplementedError3": "armhf",
         "NotImplementedError4": "ppc64le",
         "NotImplementedError5": "s390x",
-        "64bit": "x86_64",
+        "x86_64": "x86_64",
+        "amd64": "x86_64",
+        'aarch64': 'aarch64',
+        'arm64': 'aarch64'
     }
 
     try:
