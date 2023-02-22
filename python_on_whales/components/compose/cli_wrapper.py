@@ -667,7 +667,8 @@ class ComposeCLI(DockerCLICaller):
         start: bool = True,
         quiet: bool = False,
         wait: bool = False,
-    ):
+        stream: bool = False,
+    ) -> Optional[Iterable[Tuple[str, bytes]]]:
         """Start the containers.
 
         Reading the logs of the containers is not yet implemented.
@@ -701,12 +702,18 @@ class ComposeCLI(DockerCLICaller):
             quiet: By default, some progress bars and logs are sent to stderr and stdout.
                 Set `quiet=True` to avoid having any output.
             wait: Wait for services to be running|healthy. Implies detached mode.
+            stream: Similar to `docker.run(..., stream=True)`.
 
         # Returns
-            `None` at the moment. The plan is to be able to capture and stream the logs later.
-            It's not yet implemented.
+            `None` if `stream=False` (the default), `Iterable[Tuple[str, bytes]]` if `stream=True`.
 
         """
+
+        if (detach or wait) and stream:
+            raise ValueError(
+                "You can't detach and stream at the same time. It's not compatible."
+            )
+
         full_cmd = self.docker_compose_cmd + ["up"]
         full_cmd.add_flag("--build", build)
         full_cmd.add_flag("--detach", detach)
@@ -728,8 +735,12 @@ class ComposeCLI(DockerCLICaller):
         elif services is not None:
             services = to_list(services)
             full_cmd += services
-        # important information is written to both stdout AND stderr.
-        run(full_cmd, capture_stdout=quiet, capture_stderr=quiet)
+
+        if stream:
+            return stream_stdout_and_stderr(full_cmd)
+        else:
+            # important information is written to both stdout AND stderr.
+            run(full_cmd, capture_stdout=quiet, capture_stderr=quiet)
 
     def version(self) -> str:
         """Returns the version of docker compose as a `str`."""
